@@ -1,4 +1,32 @@
-const analyzeImage = async (imageData) => {
+// 宠智灵 API 配置
+// 申请Token: https://docs.gjpet.com/
+const API_CONFIG = {
+  baseUrl: 'https://ms-ai.chongzhiling.com/async/api/v2/report-service/pic',
+  token: 'YOUR_ACCESS_TOKEN', // 需要替换为真实的 access_token
+  enabled: false // 设置为 true 启用真实 API
+};
+
+// 调用宠智灵 API 进行图像分析
+const callChongZhiLingAPI = async (imageData, subModuleType = 2) => {
+  const formData = new FormData();
+  formData.append('imgfile', imageData);
+  formData.append('pet_profile_id', 1); // 默认为1
+  formData.append('sub_module_type', subModuleType);
+
+  const response = await fetch(`${API_CONFIG.baseUrl}?token=${API_CONFIG.token}`, {
+    method: 'POST',
+    body: formData
+  });
+
+  if (!response.ok) {
+    throw new Error(`API调用失败: ${response.status}`);
+  }
+
+  return response.json();
+};
+
+// 模拟 API 调用（当真实 API 未启用时使用）
+const simulateAnalysis = async (imageData) => {
   await new Promise(resolve => setTimeout(resolve, 1500));
 
   const possibleStates = [
@@ -27,6 +55,44 @@ const analyzeImage = async (imageData) => {
 
   const randomIndex = Math.floor(Math.random() * possibleStates.length);
   return possibleStates[randomIndex];
+};
+
+// 主分析函数
+const analyzeImage = async (imageData) => {
+  if (API_CONFIG.enabled && API_CONFIG.token !== 'YOUR_ACCESS_TOKEN') {
+    try {
+      const result = await callChongZhiLingAPI(imageData, 2); // 使用表情识别
+      // 解析宠智灵API返回结果并转换格式
+      return parseChongZhiLingResult(result);
+    } catch (error) {
+      console.error('宠智灵API调用失败，使用模拟数据:', error);
+      return simulateAnalysis(imageData);
+    }
+  }
+  return simulateAnalysis(imageData);
+};
+
+// 解析宠智灵 API 返回结果
+const parseChongZhiLingResult = (apiResult) => {
+  // 根据宠智灵的返回格式进行解析
+  // 这里需要根据实际API返回格式调整
+  const advice = apiResult?.data?.advice || [];
+  
+  let state = '正常';
+  let possibleIssues = [];
+  
+  if (advice.length > 0) {
+    state = '可能不适';
+    possibleIssues = advice.map(a => a.title);
+  }
+  
+  return {
+    state,
+    confidence: 0.8,
+    symptoms: advice.map(a => a.description?.explaination || a.title).slice(0, 3),
+    possibleIssues,
+    severity: state === '正常' ? 0 : 1
+  };
 };
 
 const generateQuestions = (analysisResult) => {

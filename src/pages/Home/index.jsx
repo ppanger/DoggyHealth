@@ -14,8 +14,8 @@ const Home = () => {
   const { setCurrentStep, setAnalysisResult } = useStore();
   const { 
     preview, error, isUploading, dragging,
-    handleUpload, handleDragOver, handleDragLeave, handleDrop,
-    setIsUploading, reset
+    handleDragOver, handleDragLeave, handleDrop,
+    setIsUploading, handleFile
   } = useImageUpload();
 
   const handleAnalysis = async (file) => {
@@ -24,7 +24,6 @@ const Home = () => {
     try {
       const result = await analyzeImage(file);
       setAnalysisResult(result);
-      setPreview(preview);
       
       setTimeout(() => {
         setCurrentStep('questionnaire');
@@ -40,11 +39,7 @@ const Home = () => {
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        useStore.getState().setPreview(event.target.result);
-      };
-      reader.readAsDataURL(file);
+      handleFile(file);
       handleAnalysis(file);
     }
   };
